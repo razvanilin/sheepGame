@@ -43,7 +43,7 @@ public class MainActivity extends BaseGameActivity implements
 	private static final int CAMERA_WIDTH = 720;
 	private static final int CAMERA_HEIGHT = 480;
 	private static final FixtureDef FIXTURE_DEF = PhysicsFactory
-			.createFixtureDef(1, 0.5f, 0.5f);
+			.createFixtureDef(1, 0.2f, 0.1f);
 
 	// FIELDS
 	private BitmapTextureAtlas bitmapTextureAtlas;
@@ -53,7 +53,6 @@ public class MainActivity extends BaseGameActivity implements
 	private PhysicsWorld physicsWorld;
 	private MouseJoint mouseJoint;
 	private Body surface;
-	SceneManager sceneManager;
 
 	@Override
 	public EngineOptions onCreateEngineOptions() {
@@ -73,10 +72,9 @@ public class MainActivity extends BaseGameActivity implements
 			throws Exception {
 
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
-		bitmapTextureAtlas = new BitmapTextureAtlas(getTextureManager(), 64, 64);
+		bitmapTextureAtlas = new BitmapTextureAtlas(getTextureManager(), 128, 128);
 		this.sheepTextureRegion = BitmapTextureAtlasTextureRegionFactory
-				.createFromAsset(bitmapTextureAtlas, this, "sheep3.png",
-						0, 0);
+				.createFromAsset(bitmapTextureAtlas, this, "sheep128.png", 0, 0);
 		bitmapTextureAtlas.load();
 		pOnCreateResourcesCallback.onCreateResourcesFinished();
 	}
@@ -104,24 +102,30 @@ public class MainActivity extends BaseGameActivity implements
 		final Rectangle rightWall = new Rectangle(CAMERA_WIDTH - 20, 20,
 				CAMERA_WIDTH - 20, CAMERA_HEIGHT - 20,
 				vertexBufferObjectManager);
-		final Rectangle topRoof = new Rectangle(20, 20, CAMERA_WIDTH - 20, 20,
+		final Rectangle topWall = new Rectangle(20, 20, CAMERA_WIDTH - 20, 20,
+				vertexBufferObjectManager);
+		final Rectangle fence = new Rectangle(CAMERA_WIDTH / 2,
+				CAMERA_HEIGHT - 200, 20, CAMERA_HEIGHT - 20,
 				vertexBufferObjectManager);
 
 		final FixtureDef wallFixtureDef = PhysicsFactory.createFixtureDef(0,
-				0.5f, 0.5f);
+				0.01f, 0.5f);
 		PhysicsFactory.createBoxBody(this.physicsWorld, bottomWall,
 				BodyType.StaticBody, wallFixtureDef);
-		PhysicsFactory.createBoxBody(this.physicsWorld, topRoof,
+		PhysicsFactory.createBoxBody(this.physicsWorld, topWall,
 				BodyType.StaticBody, wallFixtureDef);
 		PhysicsFactory.createBoxBody(this.physicsWorld, rightWall,
 				BodyType.StaticBody, wallFixtureDef);
 		PhysicsFactory.createBoxBody(this.physicsWorld, leftWall,
 				BodyType.StaticBody, wallFixtureDef);
+		PhysicsFactory.createBoxBody(this.physicsWorld, fence,
+				BodyType.StaticBody, wallFixtureDef);
 
-		this.scene.attachChild(topRoof);
+		this.scene.attachChild(topWall);
 		this.scene.attachChild(rightWall);
 		this.scene.attachChild(leftWall);
 		this.scene.attachChild(bottomWall);
+		this.scene.attachChild(fence);
 
 		this.scene.registerUpdateHandler(this.physicsWorld);
 
@@ -134,18 +138,6 @@ public class MainActivity extends BaseGameActivity implements
 			OnPopulateSceneCallback pOnPopulateSceneCallback) throws Exception {
 
 		loadSheep();
-		//this.mEngine.enableVibrator(this);
-		
-		/*
-		 * Sprite sheep = new Sprite(CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2,
-		 * sheepTextureRegion, this.mEngine.getVertexBufferObjectManager());
-		 * sheep.setRotation(45.0f); final FixtureDef SHEEP_FIX =
-		 * PhysicsFactory.createFixtureDef(10.0f, 0.8f, 0.0f); Body sheepBody =
-		 * PhysicsFactory.createBoxBody(physicsWorld, sheep,
-		 * BodyType.DynamicBody, SHEEP_FIX); this.scene.attachChild(sheep);
-		 * physicsWorld.registerPhysicsConnector(new PhysicsConnector(sheep,
-		 * sheepBody, true, false));
-		 */
 		pOnPopulateSceneCallback.onPopulateSceneFinished();
 	}
 
@@ -160,7 +152,7 @@ public class MainActivity extends BaseGameActivity implements
 			 * instead of creating a second one.
 			 */
 			if (this.mouseJoint == null) {
-				//this.mEngine.vibrate(100);
+				// this.mEngine.vibrate(100);
 				this.mouseJoint = this.createMouseJoint(sheep,
 						pTouchAreaLocalX, pTouchAreaLocalY);
 			}
@@ -228,20 +220,37 @@ public class MainActivity extends BaseGameActivity implements
 	}
 
 	private void loadSheep() {
+		final Sprite sheep = new Sprite(CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2,
+				this.sheepTextureRegion, this.getVertexBufferObjectManager());
+		
+		final float width = sheep.getWidthScaled()/32;
+		final float height = sheep.getWidthScaled()/32;
+		final Vector2[] vertices = {  
+				new Vector2(-0.41797f*width, -0.44531f*height),
+				new Vector2(-0.19922f*width, -0.48828f*height),
+				new Vector2(+0.06641f*width, -0.52344f*height),
+				new Vector2(+0.39844f*width, -0.34375f*height),
+				new Vector2(+0.51172f*width, -0.00391f*height),
+				new Vector2(+0.35156f*width, +0.50000f*height),
+				new Vector2(-0.28516f*width, +0.50000f*height),
+				new Vector2(-0.43750f*width, +0.01172f*height)
 
-		final Sprite sheep = new Sprite(CAMERA_WIDTH / 2,
-				CAMERA_HEIGHT / 2, this.sheepTextureRegion,
-				this.getVertexBufferObjectManager());
-		final Body sheepBody = PhysicsFactory.createBoxBody(physicsWorld,
-				sheep, BodyType.DynamicBody, FIXTURE_DEF);
+
+		 };
+		
+		
+		final Body sheepBody = PhysicsFactory.createPolygonBody(physicsWorld, sheep, vertices, BodyType.DynamicBody, FIXTURE_DEF);
 		sheep.setUserData(sheepBody);
-		//sheep.animate(200);
+		// sheep.animate(200);
+		//DebugRender debug = new DebugRender();
 
 		this.scene.registerTouchArea(sheep);
 		this.scene.attachChild(sheep);
 
 		this.physicsWorld.registerPhysicsConnector(new PhysicsConnector(sheep,
 				sheepBody, true, true));
+		
+		
+		
 	}
-
 }
